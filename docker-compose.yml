@@ -44,7 +44,7 @@ services:
   presto-coordinator:
     image: shawnzhu/prestodb:0.181
     ports:
-      - "8080:8080"
+      - "8180:8180"
 
 volumes:
   namenode:
