@@ -1,51 +1,159 @@
 version: "3"
 
 services:
-  namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+
+  namenode_hive:
+    build:
+      context: "./prod-hive/"
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     volumes:
-      - namenode:/hadoop/dfs/name
+      - "/opt/docker-hive/namenode_hive:/hadoop/dfs/name:rw"
     environment:
-      - CLUSTER_NAME=test
+      - CLUSTER_NAME=BigDataCluster
     env_file:
-      - ./hadoop-hive.env
+      - "./prod-hive/hadoop-hive.env"
+    networks:
+      - docker-hadoop_default
     ports:
       - "50070:50070"
-  datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
+
+  datanode_hive:
+    build:
+      context: "./prod-hive/"
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     volumes:
-      - datanode:/hadoop/dfs/data
+      - "/opt/docker-hive/datanode_hive:/hadoop/dfs/data:rw"
     env_file:
-      - ./hadoop-hive.env
+      - "./prod-hive/hadoop-hive.env"
     environment:
-      SERVICE_PRECONDITION: "namenode:50070"
+      SERVICE_PRECONDITION: "namenode_hive:50070"
+    networks:
+      - docker-hadoop_default
     ports:
       - "50075:50075"
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
+
   hive-server:
+    build:
+      context: "./prod-hive/"
     image: bde2020/hive:2.3.2-postgresql-metastore
     env_file:
-      - ./hadoop-hive.env
+      - "./prod-hive/hadoop-hive.env"
     environment:
       HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
       SERVICE_PRECONDITION: "hive-metastore:9083"
+    networks:
+      - docker-hadoop_default
     ports:
       - "10000:10000"
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
+
   hive-metastore:
+    build:
+      context: "./prod-hive/"
     image: bde2020/hive:2.3.2-postgresql-metastore
     env_file:
-      - ./hadoop-hive.env
+      - "./prod-hive/hadoop-hive.env"
     command: /opt/hive/bin/hive --service metastore
     environment:
-      SERVICE_PRECONDITION: "namenode:50070 datanode:50075 hive-metastore-postgresql:5432"
+      SERVICE_PRECONDITION: "namenode_hive:50070 datanode_hive:50075 hive-metastore-postgresql:5432"
+    networks:
+      - docker-hadoop_default
     ports:
       - "9083:9083"
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
+
   hive-metastore-postgresql:
-    image: bde2020/hive-metastore-postgresql:2.3.0
+    build:
+      context: "./prod-hive/"
+    image: bde2020/hive-metastore-postgresql:3.1.0
+    networks:
+      - docker-hadoop_default
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
+
   presto-coordinator:
     image: shawnzhu/prestodb:0.181
+    networks:
+      - docker-hadoop_default
     ports:
       - "8180:8180"
-
-volumes:
-  namenode:
-  datanode:
+    extra_hosts:
+      - "namenode:10.11.15.86"
+      - "namenode_hive:10.11.15.86"
+      - "datanode:10.11.15.86"
+      - "datanode_hive:10.11.15.86"
+      - "hive-metastore-postgresql:10.11.15.86"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+        reservations:
+          cpus: '2'
+          memory: 2048M
